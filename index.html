@@ -575,10 +575,13 @@
         🧪 מצב בדיקה — המייל ישלח רק אליך ללא CC
       </div>
 
-      <button type="submit" class="btn-submit" id="btnSubmit">
-        <div class="spinner"></div>
-        <span class="btn-text">📤 שלח הזמנה</span>
-      </button>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn-submit" id="btnSubmit" style="flex:1;">
+          <div class="spinner"></div>
+          <span class="btn-text">📤 שלח הזמנה</span>
+        </button>
+        <button type="button" onclick="if(confirm('לנקות את כל הטופס?')) resetForm();" style="flex:0 0 auto;padding:0 18px;background:#f1f5fb;color:var(--text-muted);border:1.5px solid var(--border);border-radius:10px;font-size:0.9rem;font-weight:600;font-family:inherit;cursor:pointer;">🗑 נקה</button>
+      </div>
 
       <div class="banner banner-success" id="bannerSuccess">
         <span class="banner-icon">✅</span>
