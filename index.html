@@ -359,6 +359,25 @@
 
     /* ERRORS */
     .field-error { font-size: 0.78rem; color: var(--red); margin-top: 3px; }
+
+    /* ADMIN ENTRY BUTTON */
+    .btn-admin-entry {
+      position: fixed;
+      bottom: 18px;
+      left: 18px;
+      background: rgba(30,41,59,0.75);
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 38px; height: 38px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transition: background 0.15s, transform 0.15s;
+      z-index: 100;
+    }
+    .btn-admin-entry:hover { background: rgba(30,41,59,0.95); transform: scale(1.08); }
   </style>
 </head>
 <body>
@@ -372,6 +391,8 @@
 <div id="adminBar" class="admin-bar" style="display:none;">
   🔐 פאנל מנהל — מצב בדיקה פעיל, מיילים נשלחים רק אליך
 </div>
+
+<button class="btn-admin-entry" onclick="enterAdmin()" title="כניסת מנהל">🔐</button>
 
 <!-- TABS -->
 <div class="tabs-bar">
@@ -502,6 +523,12 @@
 
 <!-- ADMIN PANEL -->
 <main id="adminPanel" style="display:none;">
+  <div style="display:flex;align-items:center;justify-content:space-between;max-width:960px;margin:0 auto 4px;padding:0 16px;">
+    <span style="font-size:0.85rem;color:var(--text-muted);">🔐 פאנל מנהל</span>
+    <button onclick="exitAdmin()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 16px;font-size:0.85rem;font-weight:600;font-family:inherit;color:var(--text-muted);cursor:pointer;">
+      ← חזרה לטופס
+    </button>
+  </div>
   <div class="admin-stats" id="adminStats"></div>
   <div class="card">
     <div class="card-title">
@@ -529,32 +556,36 @@
    *  CONFIG
    * ============================================================ */
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwt4pMl9f8Wr_patas0FDDn2vN5R19rNla1D959NSwA7fgHW4I10Qo8hIB1DtRj_HEE/exec';
-  const IS_ADMIN_MODE = new URLSearchParams(window.location.search).has('admin');
-  const IS_TEST_MODE  = new URLSearchParams(window.location.search).has('test') || IS_ADMIN_MODE;
-  if (IS_TEST_MODE && !IS_ADMIN_MODE) {
+  const IS_TEST_MODE = new URLSearchParams(window.location.search).has('test');
+  if (IS_TEST_MODE) {
     document.getElementById('testModeBanner').style.display = 'flex';
     document.title = '🧪 ' + document.title;
   }
-  if (IS_ADMIN_MODE) {
-    (async () => {
-      const pwd = prompt('סיסמת מנהל:');
-      if (!pwd) { window.location.href = window.location.pathname; return; }
-      try {
-        const res  = await fetch(GAS_URL + '?action=auth&pwd=' + encodeURIComponent(pwd));
-        const data = await res.json();
-        if (data.ok) {
-          document.getElementById('adminBar').style.display = 'block';
-          document.getElementById('tabAdmin').style.display = '';
-          document.title = '🔐 ' + document.title;
-        } else {
-          alert('סיסמה שגויה');
-          window.location.href = window.location.pathname;
-        }
-      } catch {
-        alert('שגיאת חיבור');
-        window.location.href = window.location.pathname;
+
+  async function enterAdmin() {
+    const pwd = prompt('סיסמת מנהל:');
+    if (!pwd) return;
+    try {
+      const res  = await fetch(GAS_URL + '?action=auth&pwd=' + encodeURIComponent(pwd));
+      const data = await res.json();
+      if (data.ok) {
+        document.getElementById('adminBar').style.display = 'block';
+        document.getElementById('tabAdmin').style.display = '';
+        document.querySelector('.btn-admin-entry').style.display = 'none';
+        switchTab('admin');
+      } else {
+        alert('סיסמה שגויה');
       }
-    })();
+    } catch {
+      alert('שגיאת חיבור');
+    }
+  }
+
+  function exitAdmin() {
+    document.getElementById('adminBar').style.display = 'none';
+    document.getElementById('tabAdmin').style.display = 'none';
+    document.querySelector('.btn-admin-entry').style.display = 'flex';
+    switchTab('form');
   }
 
   const PROJECTS = {
