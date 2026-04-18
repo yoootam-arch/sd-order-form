@@ -215,6 +215,15 @@
     label[for="earlyArrival"] { font-size: 1rem; font-weight: 600; cursor: pointer; transition: color 0.2s; user-select: none; }
     label[for="earlyArrival"].is-checked { color: var(--red); }
     .early-arrival-note { font-size: 0.8rem; color: var(--text-muted); margin-right: 30px; margin-bottom: 18px; }
+    .early-hint {
+      display: none;
+      margin-top: 8px; margin-bottom: 10px;
+      padding: 8px 14px;
+      background: #fff7ed; border: 1.5px solid #fdba74;
+      border-radius: 8px;
+      font-size: 0.82rem; font-weight: 600; color: #9a3412;
+    }
+    .early-hint.visible { display: block; }
 
     /* SUBMIT */
     .btn-submit {
@@ -560,6 +569,7 @@
         <label for="earlyArrival" id="earlyArrivalLabel">כולל הגעה מוקדמת</label>
       </div>
       <p class="early-arrival-note">סמן אם החומר צריך להגיע לפני שעת הכיול הרגילה</p>
+      <div class="early-hint" id="earlyHint">💡 יש פריט עם כיול לפני 14:00 — מומלץ לסמן הגעה מוקדמת</div>
 
       <div id="testModeBanner" style="display:none;align-items:center;gap:8px;margin-bottom:10px;padding:8px 14px;background:#fef9c3;border:1.5px solid #fcd34d;border-radius:8px;font-size:0.85rem;font-weight:600;color:#92400e;">
         🧪 מצב בדיקה — המייל ישלח רק אליך ללא CC
@@ -890,6 +900,26 @@
   const earlyLabel    = document.getElementById('earlyArrivalLabel');
   earlyCheckbox.addEventListener('change', () => {
     earlyLabel.classList.toggle('is-checked', earlyCheckbox.checked);
+    updateEarlyHint();
+  });
+
+  function hasItemBefore14() {
+    const rows = document.querySelectorAll('#itemsBody tr');
+    for (const tr of rows) {
+      const time = tr.querySelector('.inp-time').value;
+      if (time && time < '14:00') return true;
+    }
+    return false;
+  }
+
+  function updateEarlyHint() {
+    const show = hasItemBefore14() && !earlyCheckbox.checked;
+    document.getElementById('earlyHint').classList.toggle('visible', show);
+  }
+
+  // Listen for time changes in items
+  document.getElementById('itemsBody').addEventListener('change', function(e) {
+    if (e.target.classList.contains('inp-time')) updateEarlyHint();
   });
 
   /* ============================================================
@@ -1038,6 +1068,10 @@
     document.getElementById('bannerError').classList.remove('show');
 
     if (!validateForm()) return;
+
+    if (hasItemBefore14() && !earlyCheckbox.checked) {
+      if (!confirm('יש פריט עם כיול לפני 14:00 ולא סומנה הגעה מוקדמת.\n\nלשלוח בלי הגעה מוקדמת?')) return;
+    }
 
     setLoading(true);
     try {
