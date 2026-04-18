@@ -392,33 +392,32 @@
       .calkit-bar p { font-size: 0.8rem; }
       .btn-calkit { padding: 8px 10px; font-size: 0.8rem; white-space: nowrap; }
 
-      /* ── Item rows → compact 2-row card ── */
-      .table-wrapper { overflow-x: visible; }
+      /* ── Item rows → card layout ── */
+      .table-wrapper { overflow: visible; }
+      #itemsTable       { display: block; min-width: 0; width: 100%; }
       #itemsTable thead { display: none; }
-      #itemsTable, #itemsTable tbody { display: block; }
+      #itemsTable tbody { display: flex; flex-direction: column; gap: 8px; }
       #itemsTable tbody tr {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-columns: 1fr 1fr 1fr 36px;
         grid-template-areas:
-          "mat mat del"
-          "qty time date"
-          "cat cat cat";
-        gap: 6px;
+          "mat mat mat del"
+          "qty tim dat dat";
+        column-gap: 6px;
+        row-gap: 8px;
         background: #f8fafd;
         border: 1px solid var(--border);
         border-radius: 10px;
-        padding: 8px;
-        margin-bottom: 8px;
+        padding: 10px;
+        min-width: 0;
       }
-      #itemsTable td { display: block; padding: 0; border: none; width: auto; }
-      td.col-material { grid-area: mat; }
-      td.col-del      { grid-area: del; display: flex; align-items: center; justify-content: center; }
-      td.col-qty      { grid-area: qty; }
-      td.col-time     { grid-area: time; }
-      td.col-date     { grid-area: date; }
-      td.col-catalog  { grid-area: cat; }
-      /* Catalog — subtle on mobile */
-      td.col-catalog input { font-size: 14px !important; padding: 5px 8px; color: var(--text-muted); border-style: dashed; }
+      #itemsTable td     { display: block; padding: 0; border: none; min-width: 0; }
+      td.col-material    { grid-area: mat; }
+      td.col-del         { grid-area: del; display: flex; align-items: center; justify-content: center; }
+      td.col-qty         { grid-area: qty; }
+      td.col-time        { grid-area: tim; }
+      td.col-date        { grid-area: dat; }
+      td.col-catalog     { display: none; }
 
       /* Admin stats — 2×2 grid */
       .admin-stats { gap: 8px; }
