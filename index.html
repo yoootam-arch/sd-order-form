@@ -392,32 +392,37 @@
       .calkit-bar p { font-size: 0.8rem; }
       .btn-calkit { padding: 8px 10px; font-size: 0.8rem; white-space: nowrap; }
 
-      /* ── Item rows → card layout ── */
+      /* ── Item rows → card layout (flexbox, RTL-safe) ── */
       .table-wrapper { overflow: visible; }
-      #itemsTable       { display: block; min-width: 0; width: 100%; }
+      #itemsTable       { display: block !important; min-width: 0 !important; width: 100% !important; }
       #itemsTable thead { display: none; }
-      #itemsTable tbody { display: flex; flex-direction: column; gap: 8px; }
+      #itemsTable tbody { display: block; }
       #itemsTable tbody tr {
-        display: grid;
-        grid-template-columns: 1fr 1fr 1fr 36px;
-        grid-template-areas:
-          "mat mat mat del"
-          "qty tim dat dat";
-        column-gap: 6px;
-        row-gap: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
         background: #f8fafd;
         border: 1px solid var(--border);
         border-radius: 10px;
         padding: 10px;
-        min-width: 0;
+        margin-bottom: 8px;
       }
-      #itemsTable td     { display: block; padding: 0; border: none; min-width: 0; }
-      td.col-material    { grid-area: mat; }
-      td.col-del         { grid-area: del; display: flex; align-items: center; justify-content: center; }
-      td.col-qty         { grid-area: qty; }
-      td.col-time        { grid-area: tim; }
-      td.col-date        { grid-area: dat; }
-      td.col-catalog     { display: none; }
+      /* Reset ALL td widths */
+      #itemsTable td {
+        display: block;
+        padding: 0 !important;
+        border: none;
+        width: auto;
+      }
+      /* Line 1: material + delete */
+      #itemsTable td.col-material { flex: 1 1 0; min-width: 0; order: 1; }
+      #itemsTable td.col-del      { flex: 0 0 32px; order: 2; display: flex; align-items: center; justify-content: center; padding-top: 0 !important; }
+      /* Line 2: qty / time / date — equal thirds */
+      #itemsTable td.col-qty  { flex: 1 1 28%; min-width: 0; order: 3; }
+      #itemsTable td.col-time { flex: 1 1 28%; min-width: 0; order: 4; }
+      #itemsTable td.col-date { flex: 1 1 28%; min-width: 0; order: 5; }
+      /* Catalog: hidden on mobile */
+      #itemsTable td.col-catalog { display: none; order: 6; }
 
       /* Admin stats — 2×2 grid */
       .admin-stats { gap: 8px; }
@@ -817,7 +822,7 @@
         <input type="text" class="inp-catalog" placeholder="4750013-02" />
       </td>
       <td class="col-time" data-label="שעת כיול">
-        <select class="inp-time" style="border:1.5px solid #d1d9e6;border-radius:8px;padding:7px 8px;font-size:0.88rem;font-family:inherit;color:#1e293b;background:#fff;width:100%">${timeOptionsHTML('')}</select>
+        <select class="inp-time">${timeOptionsHTML('')}</select>
       </td>
       <td class="col-date" data-label="תאריך כיול">
         <input type="date" class="inp-date" value="${inheritedDate}" />
