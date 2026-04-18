@@ -414,15 +414,15 @@
         border: none;
         width: auto;
       }
-      /* Line 1: material + delete */
-      #itemsTable td.col-material { flex: 1 1 0; min-width: 0; order: 1; }
-      #itemsTable td.col-del      { flex: 0 0 32px; order: 2; display: flex; align-items: center; justify-content: center; padding-top: 0 !important; }
-      /* Line 2: qty / time / date — equal thirds */
-      #itemsTable td.col-qty  { flex: 1 1 28%; min-width: 0; order: 3; }
-      #itemsTable td.col-time { flex: 1 1 28%; min-width: 0; order: 4; }
-      #itemsTable td.col-date { flex: 1 1 28%; min-width: 0; order: 5; }
+      /* Line 1: material (full width) + delete */
+      #itemsTable td.col-material { width: calc(100% - 38px) !important; order: 1; }
+      #itemsTable td.col-del      { width: 32px !important; order: 2; display: flex; align-items: center; justify-content: center; padding-top: 0 !important; }
+      /* Line 2: qty / time / date — equal thirds, forced to wrap */
+      #itemsTable td.col-qty  { width: 30% !important; flex: 1; order: 3; }
+      #itemsTable td.col-time { width: 30% !important; flex: 1; order: 4; }
+      #itemsTable td.col-date { width: 30% !important; flex: 1; order: 5; }
       /* Catalog: hidden on mobile */
-      #itemsTable td.col-catalog { display: none; order: 6; }
+      #itemsTable td.col-catalog { display: none !important; }
 
       /* Admin stats — 2×2 grid */
       .admin-stats { gap: 8px; }
