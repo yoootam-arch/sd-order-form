@@ -362,64 +362,74 @@
 
     /* ── MOBILE ─────────────────────────────────────────────── */
     @media (max-width: 600px) {
-      /* iOS: prevent auto-zoom on input focus (needs ≥16px) */
+      /* iOS: prevent auto-zoom on input focus */
       input, select, textarea { font-size: 16px !important; }
 
-      /* Header */
-      .app-header { padding: 18px 16px 14px; }
-      .app-header h1 { font-size: 1.25rem; }
-      .header-icon { font-size: 1.8rem; margin-bottom: 4px; }
+      /* Compact header */
+      .app-header { padding: 12px 16px 10px; }
+      .app-header h1 { font-size: 1.1rem; }
+      .header-icon { font-size: 1.5rem; margin-bottom: 2px; }
+      .app-header p { font-size: 0.8rem; margin-top: 2px; }
 
-      /* Tabs — stretch to fill */
-      .tabs-bar { padding: 0 8px; gap: 2px; }
-      .tab-btn { flex: 1; padding: 10px 4px; font-size: 0.78rem; text-align: center; }
+      /* Less outer spacing */
+      main { padding: 0 8px; margin: 10px auto 24px; }
+      .card { padding: 14px 12px; margin-bottom: 10px; }
+      .card-title { margin-bottom: 12px; padding-bottom: 8px; font-size: 0.9rem; }
 
-      /* Project badge — allow wrap */
-      .project-badge { border-radius: 8px; flex-wrap: wrap; line-height: 1.6; }
+      /* Tabs — fill width, compact */
+      .tabs-bar { padding: 0 8px; gap: 2px; margin-top: 8px; }
+      .tab-btn { flex: 1; padding: 8px 2px; font-size: 0.72rem; text-align: center; }
 
-      /* CalKit bar — stack vertically */
-      .calkit-bar { flex-direction: column; align-items: stretch; gap: 8px; }
-      .btn-calkit { width: 100%; padding: 12px; font-size: 0.95rem; }
+      /* Section 1: name full-width, project + date side-by-side */
+      .field-row-3 { grid-template-columns: 1fr 1fr; row-gap: 10px; }
+      .field-row-3 .field-group:first-child { grid-column: 1 / -1; }
 
-      /* Items table → card per row */
+      /* Project badge */
+      .project-badge { font-size: 0.72rem; line-height: 1.6; flex-wrap: wrap; }
+
+      /* CalKit — compact horizontal */
+      .calkit-bar { padding: 8px 12px; gap: 8px; }
+      .calkit-bar p { font-size: 0.8rem; }
+      .btn-calkit { padding: 8px 10px; font-size: 0.8rem; white-space: nowrap; }
+
+      /* ── Item rows → compact 2-row card ── */
       .table-wrapper { overflow-x: visible; }
-      #itemsTable, #itemsTable tbody,
-      #itemsTable tr, #itemsTable td { display: block; width: 100%; }
       #itemsTable thead { display: none; }
+      #itemsTable, #itemsTable tbody { display: block; }
       #itemsTable tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-template-areas:
+          "mat mat del"
+          "qty time date"
+          "cat cat cat";
+        gap: 6px;
         background: #f8fafd;
         border: 1px solid var(--border);
         border-radius: 10px;
-        padding: 12px;
-        margin-bottom: 10px;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
       }
-      #itemsTable td { padding: 0; border: none; width: auto; }
-      #itemsTable td.col-material { grid-column: 1 / -1; }
-      #itemsTable td.col-del { grid-column: 1 / -1; text-align: left; }
-      #itemsTable td[data-label]::before {
-        content: attr(data-label);
-        display: block;
-        font-size: 0.72rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-      }
+      #itemsTable td { display: block; padding: 0; border: none; width: auto; }
+      td.col-material { grid-area: mat; }
+      td.col-del      { grid-area: del; display: flex; align-items: center; justify-content: center; }
+      td.col-qty      { grid-area: qty; }
+      td.col-time     { grid-area: time; }
+      td.col-date     { grid-area: date; }
+      td.col-catalog  { grid-area: cat; }
+      /* Catalog — subtle on mobile */
+      td.col-catalog input { font-size: 14px !important; padding: 5px 8px; color: var(--text-muted); border-style: dashed; }
 
-      /* Admin stats — 2 per row */
-      .admin-stats { gap: 10px; }
-      .stat-card { min-width: calc(50% - 5px); padding: 12px; }
-      .stat-card .stat-val { font-size: 1.5rem; }
+      /* Admin stats — 2×2 grid */
+      .admin-stats { gap: 8px; }
+      .stat-card { min-width: calc(50% - 4px); padding: 10px 8px; }
+      .stat-card .stat-val { font-size: 1.4rem; }
 
       /* Admin filters — stack */
-      .admin-filters { flex-direction: column; }
+      .admin-filters { flex-direction: column; gap: 8px; }
       .admin-filters select,
-      .admin-filters input[type=date] { width: 100%; }
-      .admin-filters button { width: 100%; padding: 10px; }
+      .admin-filters input[type=date],
+      .admin-filters button { width: 100%; }
     }
 
     /* ADMIN ENTRY BUTTON */
@@ -808,7 +818,7 @@
         <input type="text" class="inp-catalog" placeholder="4750013-02" />
       </td>
       <td class="col-time" data-label="שעת כיול">
-        <select class="inp-time" style="height:2.75rem;border:1.5px solid #d1d9e6;border-radius:8px;padding:0 8px;font-size:0.88rem;font-family:inherit;color:#1e293b;background:#fff;width:100%">${timeOptionsHTML('')}</select>
+        <select class="inp-time" style="border:1.5px solid #d1d9e6;border-radius:8px;padding:7px 8px;font-size:0.88rem;font-family:inherit;color:#1e293b;background:#fff;width:100%">${timeOptionsHTML('')}</select>
       </td>
       <td class="col-date" data-label="תאריך כיול">
         <input type="date" class="inp-date" value="${inheritedDate}" />
