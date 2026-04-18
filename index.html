@@ -632,7 +632,7 @@
    *  CONFIG
    * ============================================================ */
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbwt4pMl9f8Wr_patas0FDDn2vN5R19rNla1D959NSwA7fgHW4I10Qo8hIB1DtRj_HEE/exec';
-  const IS_TEST_MODE = new URLSearchParams(window.location.search).has('test');
+  let IS_TEST_MODE = new URLSearchParams(window.location.search).has('test');
   if (IS_TEST_MODE) {
     document.getElementById('testModeBanner').style.display = 'flex';
     document.title = '🧪 ' + document.title;
@@ -645,6 +645,7 @@
       const res  = await fetch(GAS_URL + '?action=auth&pwd=' + encodeURIComponent(pwd));
       const data = await res.json();
       if (data.ok) {
+        IS_TEST_MODE = true;
         document.getElementById('adminBar').style.display = 'block';
         document.getElementById('tabAdmin').style.display = '';
         document.querySelector('.btn-admin-entry').style.display = 'none';
@@ -658,6 +659,7 @@
   }
 
   function exitAdmin() {
+    IS_TEST_MODE = false;
     document.getElementById('adminBar').style.display = 'none';
     document.getElementById('tabAdmin').style.display = 'none';
     document.querySelector('.btn-admin-entry').style.display = 'flex';
