@@ -761,11 +761,15 @@
     } catch {}
   }
 
+  function sortedContacts() {
+    return [..._contacts].sort((a, b) => (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName, 'he'));
+  }
+
   function populateOrdererSelect() {
     const sel = document.getElementById('ordererSelect');
     const prev = sel.value;
     sel.innerHTML = '<option value="">-- בחר שם --</option>';
-    _contacts.forEach(c => {
+    sortedContacts().forEach(c => {
       sel.innerHTML += `<option value="${c.rowIndex}">${c.firstName} ${c.lastName}</option>`;
     });
     sel.innerHTML += '<option value="__new__">+ הוספת משתמש חדש</option>';
@@ -1410,24 +1414,62 @@
       el.innerHTML = '<div class="history-empty">אין אנשי קשר.</div>';
       return;
     }
-    function roleLabel(v) { return v === 'to' ? '<span style="color:#16a34a;font-weight:700">To</span>' : v === 'cc' ? '<span style="color:#b45309;font-weight:600">CC</span>' : '—'; }
-    const rows = contacts.map(c => `<tr>
-      <td>${c.firstName} ${c.lastName}</td>
-      <td style="font-size:0.8rem;color:var(--text-muted)">${c.email}</td>
-      <td style="text-align:center">${PROJECT_LABELS_UI[c.defaultProject] || '—'}</td>
-      <td style="text-align:center">${roleLabel(c.dspect)}</td>
-      <td style="text-align:center">${roleLabel(c.veriton)}</td>
-      <td style="text-align:center">${roleLabel(c.pitoach)}</td>
+    const sorted = [...contacts].sort((a, b) => (a.firstName + a.lastName).localeCompare(b.firstName + b.lastName, 'he'));
+    function roleSelect(name, val, rowIdx) {
+      const opts = ['', 'to', 'cc'].map(v => {
+        const label = v === 'to' ? 'To' : v === 'cc' ? 'CC' : '—';
+        return `<option value="${v}"${v === val ? ' selected' : ''}>${label}</option>`;
+      }).join('');
+      return `<select data-row="${rowIdx}" data-field="${name}" onchange="adminUpdateField(this)" style="padding:3px 4px;font-size:0.8rem;min-width:50px;border-radius:6px;">${opts}</select>`;
+    }
+    function projSelect(val, rowIdx) {
+      const opts = [
+        { v: '', l: '—' }, { v: 'dspect', l: 'D-Spect' }, { v: 'veriton', l: 'Veriton' }, { v: 'pitoach', l: 'פיתוח' }
+      ].map(o => `<option value="${o.v}"${o.v === val ? ' selected' : ''}>${o.l}</option>`).join('');
+      return `<select data-row="${rowIdx}" data-field="defaultProject" onchange="adminUpdateField(this)" style="padding:3px 4px;font-size:0.8rem;min-width:60px;border-radius:6px;">${opts}</select>`;
+    }
+    const rows = sorted.map(c => `<tr data-rowindex="${c.rowIndex}">
+      <td style="white-space:nowrap;">${c.firstName} ${c.lastName}</td>
+      <td style="font-size:0.78rem;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;">${c.email}</td>
+      <td style="text-align:center">${projSelect(c.defaultProject, c.rowIndex)}</td>
+      <td style="text-align:center">${roleSelect('dspect', c.dspect, c.rowIndex)}</td>
+      <td style="text-align:center">${roleSelect('veriton', c.veriton, c.rowIndex)}</td>
+      <td style="text-align:center">${roleSelect('pitoach', c.pitoach, c.rowIndex)}</td>
       <td style="text-align:center"><button class="btn-delete" title="מחק" onclick="adminDeleteContact(${c.rowIndex}, this)">🗑</button></td>
     </tr>`).join('');
     el.innerHTML = `<div style="overflow-x:auto;">
       <table class="history-table" style="font-size:0.85rem;">
         <thead><tr>
           <th>שם</th><th>מייל</th><th>פרויקט ב.מ.</th>
-          <th>D-Spect</th><th>Veriton</th><th>פיתוח</th><th>מחק</th>
+          <th>D-Spect</th><th>Veriton</th><th>פיתוח</th><th></th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
+  }
+
+  async function adminUpdateField(selectEl) {
+    const rowIndex = parseInt(selectEl.dataset.row);
+    const field    = selectEl.dataset.field;
+    const value    = selectEl.value;
+    const contact  = _contacts.find(c => c.rowIndex === rowIndex);
+    if (!contact) return;
+    const updated  = Object.assign({}, contact, { [field]: value });
+    selectEl.style.opacity = '0.5';
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'saveContact', contact: updated }),
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        _contacts = data.contacts || _contacts;
+        populateOrdererSelect();
+        selectEl.style.opacity = '1';
+        // brief green flash
+        selectEl.style.background = '#d1fae5';
+        setTimeout(() => selectEl.style.background = '', 600);
+      } else { alert('שגיאה: ' + (data.error || '')); selectEl.style.opacity = '1'; }
+    } catch (err) { alert('שגיאת רשת: ' + err.message); selectEl.style.opacity = '1'; }
   }
 
   async function adminSaveContact() {
