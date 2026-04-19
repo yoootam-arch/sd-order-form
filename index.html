@@ -86,7 +86,7 @@
     label { font-size: 0.875rem; font-weight: 600; color: var(--text); }
     label .required { color: var(--red); margin-right: 2px; }
 
-    input[type="text"], input[type="date"], input[type="number"],
+    input[type="text"], input[type="email"], input[type="date"], input[type="number"],
     input[type="time"], select, textarea {
       border: 1.5px solid var(--border);
       border-radius: 8px;
@@ -1289,8 +1289,9 @@
       _adminAllOrders = data.orders || [];
       renderAdminStats(_adminAllOrders);
       applyAdminFilter();
-    } catch {
-      el.innerHTML = '<div class="history-empty">שגיאה בטעינת הזמנות.</div>';
+    } catch (err) {
+      console.error('Admin orders error:', err);
+      el.innerHTML = '<div class="history-empty">שגיאה בטעינת הזמנות: ' + err.message + '</div>';
     }
 
     // load contacts
@@ -1300,8 +1301,9 @@
       _contacts = data.contacts || [];
       populateOrdererSelect();
       renderAdminContacts(_contacts);
-    } catch {
-      cl.innerHTML = '<div class="history-empty">שגיאה בטעינת אנשי קשר.</div>';
+    } catch (err) {
+      console.error('Admin contacts error:', err);
+      cl.innerHTML = '<div class="history-empty">שגיאה בטעינת אנשי קשר: ' + err.message + '</div>';
     }
   }
 
