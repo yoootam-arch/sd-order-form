@@ -663,24 +663,41 @@
     </div>
     <div id="adminContactsContent" class="history-loading">טוען...</div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-      <div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:8px;">הוספת איש קשר חדש</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
-        <input type="text" id="acFirstName" placeholder="שם פרטי" />
-        <input type="text" id="acLastName" placeholder="שם משפחה" />
-        <input type="email" id="acEmail" placeholder="מייל" />
+      <div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:10px;">➕ הוספת איש קשר חדש</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <input type="text" id="acFirstName" placeholder="שם פרטי *" />
+        <input type="text" id="acLastName" placeholder="שם משפחה *" />
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
-        <select id="acDefaultProject">
-          <option value="">פרויקט ברירת מחדל</option>
+      <div style="margin-bottom:8px;">
+        <input type="email" id="acEmail" placeholder="כתובת מייל *" style="width:100%;" />
+      </div>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;display:block;">פרויקט ברירת מחדל (לא חובה — למנהלים/כלליים)</label>
+        <select id="acDefaultProject" style="width:100%;">
+          <option value="">ללא — כללי</option>
           <option value="dspect">D-Spect</option>
           <option value="veriton">Veriton</option>
           <option value="pitoach">פיתוח</option>
         </select>
-        <select id="acDspect"><option value="">D-Spect</option><option value="to">To</option><option value="cc">CC</option></select>
-        <select id="acVeriton"><option value="">Veriton</option><option value="to">To</option><option value="cc">CC</option></select>
-        <select id="acPitoach"><option value="">פיתוח</option><option value="to">To</option><option value="cc">CC</option></select>
       </div>
-      <button type="button" onclick="adminSaveContact()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:0.88rem;font-weight:600;font-family:inherit;cursor:pointer;">הוסף</button>
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.8rem;color:var(--text-muted);margin-bottom:4px;display:block;">תפקיד מיילים לפי פרויקט</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+          <div>
+            <div style="font-size:0.75rem;text-align:center;color:var(--text-muted);margin-bottom:2px;">D-Spect</div>
+            <select id="acDspect"><option value="">—</option><option value="to">To</option><option value="cc">CC</option></select>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;text-align:center;color:var(--text-muted);margin-bottom:2px;">Veriton</div>
+            <select id="acVeriton"><option value="">—</option><option value="to">To</option><option value="cc">CC</option></select>
+          </div>
+          <div>
+            <div style="font-size:0.75rem;text-align:center;color:var(--text-muted);margin-bottom:2px;">פיתוח</div>
+            <select id="acPitoach"><option value="">—</option><option value="to">To</option><option value="cc">CC</option></select>
+          </div>
+        </div>
+      </div>
+      <button type="button" onclick="adminSaveContact()" style="width:100%;padding:10px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:0.9rem;font-weight:600;font-family:inherit;cursor:pointer;">➕ הוסף איש קשר</button>
     </div>
   </div>
 </main>
@@ -1261,21 +1278,30 @@
 
   async function loadAdmin() {
     const el = document.getElementById('adminContent');
-    el.innerHTML = '<div class="history-loading">טוען...</div>';
-    document.getElementById('adminContactsContent').innerHTML = '<div class="history-loading">טוען...</div>';
+    const cl = document.getElementById('adminContactsContent');
+    el.innerHTML = '<div class="history-loading">טוען הזמנות...</div>';
+    cl.innerHTML = '<div class="history-loading">טוען אנשי קשר...</div>';
+
+    // load orders
     try {
-      const [ordersRes, contactsRes] = await Promise.all([
-        fetch(GAS_URL + '?action=list'),
-        fetch(GAS_URL + '?action=contacts'),
-      ]);
-      const ordersData   = await ordersRes.json();
-      const contactsData = await contactsRes.json();
-      _adminAllOrders = ordersData.orders || [];
+      const res  = await fetch(GAS_URL + '?action=list');
+      const data = await res.json();
+      _adminAllOrders = data.orders || [];
       renderAdminStats(_adminAllOrders);
       applyAdminFilter();
-      renderAdminContacts(contactsData.contacts || []);
     } catch {
-      el.innerHTML = '<div class="history-empty">שגיאה בטעינת הנתונים.</div>';
+      el.innerHTML = '<div class="history-empty">שגיאה בטעינת הזמנות.</div>';
+    }
+
+    // load contacts
+    try {
+      const res  = await fetch(GAS_URL + '?action=contacts');
+      const data = await res.json();
+      _contacts = data.contacts || [];
+      populateOrdererSelect();
+      renderAdminContacts(_contacts);
+    } catch {
+      cl.innerHTML = '<div class="history-empty">שגיאה בטעינת אנשי קשר.</div>';
     }
   }
 
