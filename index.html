@@ -1244,10 +1244,19 @@
       const data = await res.json();
       if (data.status === 'ok') {
         showBanner('success');
+        if (IS_TEST_MODE && data.debugRecipients) {
+          const r = data.debugRecipients;
+          const info = document.createElement('div');
+          info.style.cssText = 'margin-top:8px;padding:10px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;font-size:0.82rem;text-align:right;line-height:1.7;';
+          info.innerHTML = '<strong>📧 במצב רגיל המייל היה נשלח ל:</strong><br>' +
+            '<b>To:</b> ' + (r.to || '—') + '<br>' +
+            '<b>CC:</b> ' + (r.cc || '—');
+          document.getElementById('bannerSuccess').appendChild(info);
+        }
         setTimeout(() => {
           resetForm();
           document.getElementById('bannerSuccess').classList.remove('show');
-        }, 4000);
+        }, IS_TEST_MODE ? 10000 : 4000);
       } else {
         showBanner('error', data.error || 'שגיאה לא ידועה');
       }
