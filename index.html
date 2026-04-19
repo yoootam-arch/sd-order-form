@@ -794,7 +794,7 @@
     try {
       const res = await fetch(GAS_URL, {
         method: 'POST', headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveContact', contact: { firstName: fn, lastName: ln, email: em, defaultProject: pr } }),
+        body: JSON.stringify({ action: 'saveContact', contact: { firstName: fn, lastName: ln, email: em, defaultProject: pr, dspect: 'cc', veriton: 'cc', pitoach: 'cc' } }),
       });
       const data = await res.json();
       if (data.status === 'ok') {
