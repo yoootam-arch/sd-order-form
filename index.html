@@ -497,8 +497,25 @@
       </div>
       <div class="field-row-3">
         <div class="field-group">
-          <label for="ordererName">שם המזמין <span class="required">*</span></label>
-          <input type="text" id="ordererName" placeholder="לדוגמה: יבגני ביבסקי" autocomplete="name" />
+          <label for="ordererSelect">שם המזמין <span class="required">*</span></label>
+          <select id="ordererSelect">
+            <option value="">-- בחר שם --</option>
+            <option value="__new__">+ הוספת משתמש חדש</option>
+          </select>
+          <div id="newContactForm" style="display:none;margin-top:8px;background:#f8fafd;border:1px solid var(--border);border-radius:8px;padding:10px;display:none;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px;">
+              <input type="text" id="newFirstName" placeholder="שם פרטי *" />
+              <input type="text" id="newLastName" placeholder="שם משפחה *" />
+            </div>
+            <input type="email" id="newEmail" placeholder="מייל *" style="margin-bottom:6px;" />
+            <select id="newProject" style="margin-bottom:8px;">
+              <option value="">-- פרויקט ברירת מחדל --</option>
+              <option value="dspect">D-Spect</option>
+              <option value="veriton">Veriton</option>
+              <option value="pitoach">פיתוח</option>
+            </select>
+            <button type="button" onclick="saveNewContact()" style="width:100%;padding:8px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:0.88rem;font-weight:600;font-family:inherit;cursor:pointer;">שמור והמשך</button>
+          </div>
           <span class="field-error" id="err-name"></span>
         </div>
         <div class="field-group">
@@ -638,6 +655,34 @@
     </div>
     <div id="adminContent" class="history-loading">טוען...</div>
   </div>
+  <!-- CONTACTS MANAGEMENT -->
+  <div class="card">
+    <div class="card-title">
+      <span class="card-title-icon">👥</span>
+      ניהול אנשי קשר
+    </div>
+    <div id="adminContactsContent" class="history-loading">טוען...</div>
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:8px;">הוספת איש קשר חדש</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:6px;">
+        <input type="text" id="acFirstName" placeholder="שם פרטי" />
+        <input type="text" id="acLastName" placeholder="שם משפחה" />
+        <input type="email" id="acEmail" placeholder="מייל" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+        <select id="acDefaultProject">
+          <option value="">פרויקט ברירת מחדל</option>
+          <option value="dspect">D-Spect</option>
+          <option value="veriton">Veriton</option>
+          <option value="pitoach">פיתוח</option>
+        </select>
+        <select id="acDspect"><option value="">D-Spect</option><option value="to">To</option><option value="cc">CC</option></select>
+        <select id="acVeriton"><option value="">Veriton</option><option value="to">To</option><option value="cc">CC</option></select>
+        <select id="acPitoach"><option value="">פיתוח</option><option value="to">To</option><option value="cc">CC</option></select>
+      </div>
+      <button type="button" onclick="adminSaveContact()" style="padding:8px 20px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:0.88rem;font-weight:600;font-family:inherit;cursor:pointer;">הוסף</button>
+    </div>
+  </div>
 </main>
 
 <script>
@@ -680,10 +725,101 @@
   }
 
   const PROJECTS = {
-    dspect:  { badgeClass: 'dspect',  showCalKit: true,  badgeText: '📧 To: יותם  |  CC: עמית, דניס, יבגני ס., ג\'רי, יבגני ב., שלומי' },
-    veriton: { badgeClass: 'veriton', showCalKit: false, badgeText: '📧 To: עמית, דניס  |  CC: יותם, יבגני ס., ג\'רי, יבגני ב., שלומי' },
-    pitoach: { badgeClass: 'pitoach', showCalKit: false, badgeText: '📧 To: יותם, עמית, דניס  |  CC: יבגני ס., ג\'רי, יבגני ב., שלומי' },
+    dspect:  { badgeClass: 'dspect',  showCalKit: true },
+    veriton: { badgeClass: 'veriton', showCalKit: false },
+    pitoach: { badgeClass: 'pitoach', showCalKit: false },
   };
+
+  /* ============================================================
+   *  CONTACTS
+   * ============================================================ */
+  let _contacts = [];
+
+  async function loadContacts() {
+    try {
+      const res  = await fetch(GAS_URL + '?action=contacts');
+      const data = await res.json();
+      _contacts = data.contacts || [];
+      populateOrdererSelect();
+    } catch {}
+  }
+
+  function populateOrdererSelect() {
+    const sel = document.getElementById('ordererSelect');
+    const prev = sel.value;
+    sel.innerHTML = '<option value="">-- בחר שם --</option>';
+    _contacts.forEach(c => {
+      sel.innerHTML += `<option value="${c.rowIndex}">${c.firstName} ${c.lastName}</option>`;
+    });
+    sel.innerHTML += '<option value="__new__">+ הוספת משתמש חדש</option>';
+    if (prev) sel.value = prev;
+  }
+
+  function buildBadgeText(projectKey) {
+    const toNames = [], ccNames = [];
+    _contacts.forEach(c => {
+      if (c[projectKey] === 'to') toNames.push(c.firstName);
+      else if (c[projectKey] === 'cc') ccNames.push(c.firstName);
+    });
+    if (!toNames.length && !ccNames.length) return '';
+    let text = '📧 To: ' + (toNames.join(', ') || '—');
+    if (ccNames.length) text += '  |  CC: ' + ccNames.join(', ');
+    return text;
+  }
+
+  // orderer select → auto-project + new contact form
+  document.getElementById('ordererSelect').addEventListener('change', function() {
+    const form = document.getElementById('newContactForm');
+    if (this.value === '__new__') {
+      form.style.display = 'block';
+      document.getElementById('newFirstName').focus();
+      return;
+    }
+    form.style.display = 'none';
+    if (!this.value) return;
+    const contact = _contacts.find(c => c.rowIndex === parseInt(this.value));
+    if (contact && contact.defaultProject) {
+      const projSel = document.getElementById('projectSelect');
+      projSel.value = contact.defaultProject;
+      projSel.dispatchEvent(new Event('change'));
+    }
+  });
+
+  async function saveNewContact() {
+    const fn = document.getElementById('newFirstName').value.trim();
+    const ln = document.getElementById('newLastName').value.trim();
+    const em = document.getElementById('newEmail').value.trim();
+    const pr = document.getElementById('newProject').value;
+    if (!fn || !ln || !em) { alert('יש למלא שם פרטי, שם משפחה ומייל'); return; }
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'saveContact', contact: { firstName: fn, lastName: ln, email: em, defaultProject: pr } }),
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        _contacts = data.contacts || _contacts;
+        populateOrdererSelect();
+        // select the newly created contact (last one)
+        const sel = document.getElementById('ordererSelect');
+        const last = _contacts[_contacts.length - 1];
+        if (last) sel.value = last.rowIndex;
+        document.getElementById('newContactForm').style.display = 'none';
+        // auto-fill project
+        if (pr) {
+          document.getElementById('projectSelect').value = pr;
+          document.getElementById('projectSelect').dispatchEvent(new Event('change'));
+        }
+        // clear form
+        document.getElementById('newFirstName').value = '';
+        document.getElementById('newLastName').value = '';
+        document.getElementById('newEmail').value = '';
+        document.getElementById('newProject').value = '';
+      } else { alert('שגיאה: ' + (data.error || '')); }
+    } catch (err) { alert('שגיאת רשת: ' + err.message); }
+  }
+
+  loadContacts();
 
   /* ============================================================
    *  MATERIALS
@@ -731,7 +867,7 @@
     badge.className = 'project-badge';
     if (proj) {
       badge.classList.add('visible', proj.badgeClass);
-      badge.textContent = proj.badgeText;
+      badge.textContent = buildBadgeText(this.value);
     }
     calkitBar.classList.toggle('visible', !!(proj && proj.showCalKit));
   });
@@ -939,10 +1075,10 @@
     clearErrors();
     let valid = true;
 
-    const name = document.getElementById('ordererName').value.trim();
-    if (!name) {
-      document.getElementById('err-name').textContent = 'נא להזין שם מזמין';
-      document.getElementById('ordererName').classList.add('error');
+    const ordSel = document.getElementById('ordererSelect');
+    if (!ordSel.value || ordSel.value === '__new__') {
+      document.getElementById('err-name').textContent = 'נא לבחור שם מזמין';
+      ordSel.classList.add('error');
       valid = false;
     }
     if (!document.getElementById('projectSelect').value) {
@@ -1013,7 +1149,7 @@
       }
     });
     return {
-      requester:    document.getElementById('ordererName').value.trim(),
+      requester:    document.getElementById('ordererSelect').selectedOptions[0]?.text || '',
       project:      document.getElementById('projectSelect').value,
       date:         document.getElementById('mainDate').value,
       items,
@@ -1044,7 +1180,8 @@
   }
 
   function resetForm() {
-    document.getElementById('ordererName').value   = '';
+    document.getElementById('ordererSelect').value  = '';
+    document.getElementById('newContactForm').style.display = 'none';
     document.getElementById('projectSelect').value = '';
     document.getElementById('mainDate').value       = '';
     const badge = document.getElementById('projectBadge');
@@ -1059,7 +1196,7 @@
     rowIndex = 0;
     addRow();
     clearErrors();
-    document.getElementById('ordererName').focus();
+    document.getElementById('ordererSelect').focus();
   }
 
   /* ============================================================
@@ -1125,12 +1262,18 @@
   async function loadAdmin() {
     const el = document.getElementById('adminContent');
     el.innerHTML = '<div class="history-loading">טוען...</div>';
+    document.getElementById('adminContactsContent').innerHTML = '<div class="history-loading">טוען...</div>';
     try {
-      const res  = await fetch(GAS_URL + '?action=list');
-      const data = await res.json();
-      _adminAllOrders = data.orders || [];
+      const [ordersRes, contactsRes] = await Promise.all([
+        fetch(GAS_URL + '?action=list'),
+        fetch(GAS_URL + '?action=contacts'),
+      ]);
+      const ordersData   = await ordersRes.json();
+      const contactsData = await contactsRes.json();
+      _adminAllOrders = ordersData.orders || [];
       renderAdminStats(_adminAllOrders);
       applyAdminFilter();
+      renderAdminContacts(contactsData.contacts || []);
     } catch {
       el.innerHTML = '<div class="history-empty">שגיאה בטעינת הנתונים.</div>';
     }
@@ -1220,6 +1363,90 @@
         renderAdminStats(_adminAllOrders);
       } else {
         alert('שגיאה: ' + (data.error || 'לא ידוע'));
+        btn.disabled = false;
+        btn.textContent = '🗑';
+      }
+    } catch (err) {
+      alert('שגיאת רשת: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = '🗑';
+    }
+  }
+
+  /* ============================================================
+   *  ADMIN — CONTACTS
+   * ============================================================ */
+  function renderAdminContacts(contacts) {
+    const el = document.getElementById('adminContactsContent');
+    if (!contacts || contacts.length === 0) {
+      el.innerHTML = '<div class="history-empty">אין אנשי קשר.</div>';
+      return;
+    }
+    function roleLabel(v) { return v === 'to' ? '<span style="color:#16a34a;font-weight:700">To</span>' : v === 'cc' ? '<span style="color:#b45309;font-weight:600">CC</span>' : '—'; }
+    const rows = contacts.map(c => `<tr>
+      <td>${c.firstName} ${c.lastName}</td>
+      <td style="font-size:0.8rem;color:var(--text-muted)">${c.email}</td>
+      <td style="text-align:center">${PROJECT_LABELS_UI[c.defaultProject] || '—'}</td>
+      <td style="text-align:center">${roleLabel(c.dspect)}</td>
+      <td style="text-align:center">${roleLabel(c.veriton)}</td>
+      <td style="text-align:center">${roleLabel(c.pitoach)}</td>
+      <td style="text-align:center"><button class="btn-delete" title="מחק" onclick="adminDeleteContact(${c.rowIndex}, this)">🗑</button></td>
+    </tr>`).join('');
+    el.innerHTML = `<div style="overflow-x:auto;">
+      <table class="history-table" style="font-size:0.85rem;">
+        <thead><tr>
+          <th>שם</th><th>מייל</th><th>פרויקט ב.מ.</th>
+          <th>D-Spect</th><th>Veriton</th><th>פיתוח</th><th>מחק</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>`;
+  }
+
+  async function adminSaveContact() {
+    const fn = document.getElementById('acFirstName').value.trim();
+    const ln = document.getElementById('acLastName').value.trim();
+    const em = document.getElementById('acEmail').value.trim();
+    if (!fn || !ln || !em) { alert('יש למלא שם פרטי, שם משפחה ומייל'); return; }
+    const contact = {
+      firstName: fn, lastName: ln, email: em,
+      defaultProject: document.getElementById('acDefaultProject').value,
+      dspect:  document.getElementById('acDspect').value,
+      veriton: document.getElementById('acVeriton').value,
+      pitoach: document.getElementById('acPitoach').value,
+    };
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'saveContact', contact }),
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        _contacts = data.contacts || _contacts;
+        populateOrdererSelect();
+        renderAdminContacts(data.contacts || []);
+        // clear form
+        ['acFirstName','acLastName','acEmail'].forEach(id => document.getElementById(id).value = '');
+        ['acDefaultProject','acDspect','acVeriton','acPitoach'].forEach(id => document.getElementById(id).selectedIndex = 0);
+      } else { alert('שגיאה: ' + (data.error || '')); }
+    } catch (err) { alert('שגיאת רשת: ' + err.message); }
+  }
+
+  async function adminDeleteContact(rowIndex, btn) {
+    if (!confirm('למחוק את איש הקשר הזה?')) return;
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      const res = await fetch(GAS_URL, {
+        method: 'POST', headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ action: 'deleteContact', rowIndex }),
+      });
+      const data = await res.json();
+      if (data.status === 'ok') {
+        _contacts = data.contacts || _contacts;
+        populateOrdererSelect();
+        renderAdminContacts(data.contacts || []);
+      } else {
+        alert('שגיאה: ' + (data.error || ''));
         btn.disabled = false;
         btn.textContent = '🗑';
       }
