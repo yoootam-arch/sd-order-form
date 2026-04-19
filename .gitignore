@@ -1,0 +1,5 @@
+# Local Netlify folder
+.netlify
+
+# GAS backend — lives on Google's servers, not needed in public repo
+gas/
