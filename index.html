@@ -713,13 +713,32 @@
     document.title = '🧪 ' + document.title;
   }
 
+  // Held in memory only, for the life of the tab. Every admin-only call
+  // carries it; the server re-checks it on each request. Without this the
+  // password only unhid a tab in the browser and the endpoints stayed open.
+  let ADMIN_TOKEN = '';
+
+  function adminPost(payload) {
+    return fetch(GAS_URL, {
+      method:  'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body:    JSON.stringify(Object.assign({ token: ADMIN_TOKEN }, payload)),
+    }).then(r => r.json());
+  }
+
   async function enterAdmin() {
     const pwd = prompt('סיסמת מנהל:');
     if (!pwd) return;
     try {
-      const res  = await fetch(GAS_URL + '?action=auth&pwd=' + encodeURIComponent(pwd));
+      // POST, not GET -- a password in a query string lands in server logs.
+      const res  = await fetch(GAS_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body:    JSON.stringify({ action: 'auth', token: pwd }),
+      });
       const data = await res.json();
       if (data.ok) {
+        ADMIN_TOKEN = pwd;
         IS_TEST_MODE = true;
         document.getElementById('adminBar').style.display = 'block';
         document.getElementById('tabAdmin').style.display = '';
@@ -734,6 +753,7 @@
   }
 
   function exitAdmin() {
+    ADMIN_TOKEN = '';
     IS_TEST_MODE = false;
     document.getElementById('adminBar').style.display = 'none';
     document.getElementById('tabAdmin').style.display = 'none';
@@ -899,12 +919,14 @@
   let _dateTimer = null;
   document.getElementById('mainDate').addEventListener('change', function () {
     const newDate = this.value;
-    // sync first row if it was empty or matched the old value
-    const firstRow = document.querySelector('#itemsBody tr');
-    if (firstRow) {
-      const inp = firstRow.querySelector('.inp-date');
+    // sync EVERY row that was empty or still matched the old value.
+    // This used to touch only the first row, so rows 2..n silently kept the
+    // previous date -- the email subject said one date and its lines another.
+    document.querySelectorAll('#itemsBody tr').forEach(tr => {
+      const inp = tr.querySelector('.inp-date');
+      if (!inp) return;
       if (!inp.value || inp.value === this._prevValue) inp.value = newDate;
-    }
+    });
     this._prevValue = newDate;
 
     // duplicate check
@@ -1044,8 +1066,13 @@
     if (mat && mat.catalog) {
       catalogInput.value = mat.catalog;
       delete catalogInput.dataset.userEdited;
-    } else if (!isOther && !catalogInput.dataset.userEdited) {
+    } else {
+      // Any material that carries no catalog clears the field -- including
+      // 'other'. The !isOther guard used to leave the PREVIOUS material's
+      // catalog attached to a different isotope, and on mobile the column is
+      // hidden, so nothing on screen revealed it.
       catalogInput.value = '';
+      delete catalogInput.dataset.userEdited;
     }
   });
 
@@ -1175,7 +1202,10 @@
       date:         document.getElementById('mainDate').value,
       items,
       earlyArrival: earlyCheckbox.checked,
-      ...(IS_TEST_MODE && { testTo: 'yotamb@spectrum-dynamics.com' }),
+      // The server decides where a test mail goes (Script Property TEST_TO).
+      // When the client named the address, anyone could send mail from this
+      // account to anywhere.
+      ...(IS_TEST_MODE && { test: true }),
     };
   }
 
@@ -1307,10 +1337,11 @@
       el.innerHTML = '<div class="history-empty">שגיאה בטעינת הזמנות: ' + err.message + '</div>';
     }
 
-    // load contacts
+    // load contacts -- POST with the token, so this response includes the
+    // email addresses. The public GET deliberately omits them.
     try {
-      const res  = await fetch(GAS_URL + '?action=contacts');
-      const data = await res.json();
+      const data = await adminPost({ action: 'contacts' });
+      if (data.status !== 'ok') throw new Error(data.error || 'שגיאה');
       _contacts = data.contacts || [];
       populateOrdererSelect();
       renderAdminContacts(_contacts);
@@ -1392,16 +1423,13 @@
     btn.disabled = true;
     btn.textContent = '...';
     try {
-      const res  = await fetch(GAS_URL, {
-        method:  'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body:    JSON.stringify({ action: 'delete', rowIndex }),
-      });
-      const data = await res.json();
+      const data = await adminPost({ action: 'delete', rowIndex });
       if (data.status === 'ok') {
-        btn.closest('tr').remove();
-        _adminAllOrders = _adminAllOrders.filter(o => o.rowIndex !== rowIndex);
-        renderAdminStats(_adminAllOrders);
+        // Re-fetch instead of patching the DOM. Deleting a sheet row shifts
+        // every row below it up by one, so every other button's cached
+        // rowIndex is now off by one -- the next delete would hit an
+        // unrelated order, silently.
+        await loadAdmin();
       } else {
         alert('שגיאה: ' + (data.error || 'לא ידוע'));
         btn.disabled = false;
@@ -1465,11 +1493,7 @@
     const updated  = Object.assign({}, contact, { [field]: value });
     selectEl.style.opacity = '0.5';
     try {
-      const res = await fetch(GAS_URL, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveContact', contact: updated }),
-      });
-      const data = await res.json();
+      const data = await adminPost({ action: 'saveContact', contact: updated });
       if (data.status === 'ok') {
         _contacts = data.contacts || _contacts;
         populateOrdererSelect();
@@ -1494,11 +1518,7 @@
       pitoach: document.getElementById('acPitoach').value,
     };
     try {
-      const res = await fetch(GAS_URL, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'saveContact', contact }),
-      });
-      const data = await res.json();
+      const data = await adminPost({ action: 'saveContact', contact });
       if (data.status === 'ok') {
         _contacts = data.contacts || _contacts;
         populateOrdererSelect();
@@ -1515,11 +1535,7 @@
     btn.disabled = true;
     btn.textContent = '...';
     try {
-      const res = await fetch(GAS_URL, {
-        method: 'POST', headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify({ action: 'deleteContact', rowIndex }),
-      });
-      const data = await res.json();
+      const data = await adminPost({ action: 'deleteContact', rowIndex });
       if (data.status === 'ok') {
         _contacts = data.contacts || _contacts;
         populateOrdererSelect();
