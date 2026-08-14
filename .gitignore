@@ -3,3 +3,6 @@
 
 # GAS backend — lives on Google's servers, not needed in public repo
 gas/
+
+# clasp config — holds the Apps Script ID; this repo is PUBLIC
+.clasp.json
